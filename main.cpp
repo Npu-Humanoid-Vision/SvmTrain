@@ -11,6 +11,7 @@ void GetXsSampleData(const string& folder_path, const string& postfix, int lable
             cv::Mat& train_data, cv::Mat& train_data_lables) {
     
     HogGetter hog_getter;
+    hog_getter.set_window_size(cv::Size(32,32));
     hog_getter.ImageReader_(folder_path, postfix);
     hog_getter.HogComputter_();
 
@@ -23,34 +24,37 @@ void GetXsSampleData(const string& folder_path, const string& postfix, int lable
 
 int main(int argc, char const *argv[]) {
 
-    string root_path = "../../BackUpSource/People/Train/";
+    string root_path = "../../BackUpSource/Ball/Train/";
     cv::Mat train_data;
     cv::Mat train_data_lables;
 
-    GetXsSampleData( root_path + "NegSample/", "*.png", NEG_LABLE, train_data, train_data_lables );
+    GetXsSampleData( root_path + "Pos/", "*.jpg", POS_LABLE, train_data, train_data_lables );
+    GetXsSampleData( root_path + "Neg/", "*.jpg", NEG_LABLE, train_data, train_data_lables );
     // cout<<train_data.size()<<' '<<train_data.type()<<endl;
     // cout<<train_data_lables.size()<<' '<<train_data_lables.type()<<endl;
-    GetXsSampleData( root_path + "PosSample/", "*.png", POS_LABLE, train_data, train_data_lables );
     // cout<<train_data.size()<<endl;
     // cout<<train_data_lables.size()<<endl;
 
     // 参数设置
     CvSVMParams train_params;
     train_params.svm_type = CvSVM::C_SVC;
-    train_params.kernel_type = CvSVM::LINEAR;
+    train_params.kernel_type = CvSVM::RBF;
     train_params.degree = 0;
     train_params.gamma = 1;
     train_params.coef0 = 0;
     train_params.C = 1;
     train_params.nu = 0;
     train_params.p = 0;
-    train_params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 10000, 0.01); // 训练终止条件
+    train_params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100000, 1e-7); // 训练终止条件
 
     CvSVM trainer;
-    trainer.train(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
+    // trainer.train(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
+    // trainer.train()
+    trainer.train_auto(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
 
+    cout<<trainer.params.C<<trainer.params.nu<<endl;
     cout<<"train done"<<endl;
-    trainer.save("model.xml");
+    trainer.save("ball_linear_auto.xml");
 
     return 0;
 }
