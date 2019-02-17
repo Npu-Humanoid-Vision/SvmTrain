@@ -70,7 +70,7 @@ void GetXsSampleData(const string folder_path, int lable,
     // get the image names
     std::vector<std::string> image_names;
     GetImgNames(folder_path, image_names);
-    cout<<image_names.size()<<endl;
+
     // define hog descriptor 
     cv::HOGDescriptor hog_des(Size(32, 32), Size(16, 16), Size(8, 8), Size(8, 8), 9);
 
@@ -81,21 +81,50 @@ void GetXsSampleData(const string folder_path, int lable,
         std::vector<float> t_descrip_vec;
         hog_des.compute(t_image, t_descrip_vec);
 
-        // initialization for train data
-        if (i == image_names.begin()) {
-            train_data = cv::Mat::zeros(image_names.size(), t_descrip_vec.size(), CV_32FC1);
-        } 
+
         // copy t_descrip_vec to train_data
+        cv::Mat t_mat = cv::Mat(1, t_descrip_vec.size(), CV_32FC1);
         for (auto j = 0; j < t_descrip_vec.size(); j++) {
-            train_data.at<float>(i-image_names.begin(), j) = t_descrip_vec[j];
+            t_mat.at<float>(0, j) = t_descrip_vec[j];
         }
+        train_data.push_back(t_mat);
         train_data_lables.push_back(lable);
     }
 }
 
 int main(int argc, char const *argv[]) {
+
+    string pos_root_path = "../../BackUpSource/Ball/Train/Preproc/Pos/";
+    string neg_root_path = "../../BackUpSource/Ball/Train/Preproc/Neg/";
+    cv::Mat train_data;
+    cv::Mat train_data_lables;
+    GetXsSampleData(pos_root_path, POS_LABLE, train_data, train_data_lables);
+    GetXsSampleData(neg_root_path, NEG_LABLE, train_data, train_data_lables);
+    cout<<train_data.size()<<' '<<train_data_lables.size()<<endl;
+
 #ifdef __WIN32 // mingw 只配了 opencv2
+    // 参数设置
+    CvSVMParams train_params;
+    train_params.svm_type = CvSVM::C_SVC;
+    train_params.kernel_type = CvSVM::RBF;
+    train_params.degree = 0;
+    train_params.gamma = 1;
+    train_params.coef0 = 0;
+    train_params.C = 1;
+    train_params.nu = 0;
+    train_params.p = 0;
+    train_params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100000, 1e-7); // 训练终止条件
+
+    CvSVM trainer;
+    // trainer.train(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
+    // trainer.train()
+    trainer.train_auto(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
+
+    // cout<<trainer.params.C<<trainer.params.nu<<endl;
     
+    cout<<"train done"<<endl;
+    trainer.save("ball_rbf_auto.xml");
+
 #endif
 
 #ifdef __linux__
