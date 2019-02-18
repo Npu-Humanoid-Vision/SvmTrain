@@ -72,7 +72,7 @@ void GetXsSampleData(const string folder_path, int lable,
     GetImgNames(folder_path, image_names);
 
     // define hog descriptor 
-    cv::HOGDescriptor hog_des(Size(32, 32), Size(16, 16), Size(8, 8), Size(8, 8), 9);
+    cv::HOGDescriptor hog_des(Size(32, 32), Size(16, 16), Size(2, 2), Size(8, 8), 12);
 
     // read images and compute
     for (auto i = image_names.begin(); i != image_names.end(); i++) {
@@ -93,6 +93,8 @@ void GetXsSampleData(const string folder_path, int lable,
 }
 
 int main(int argc, char const *argv[]) {
+    // for train time
+    double begin;
 
     string pos_root_path = "../../BackUpSource/Ball/Train/Preproc/Pos/";
     string neg_root_path = "../../BackUpSource/Ball/Train/Preproc/Neg/";
@@ -129,35 +131,16 @@ int main(int argc, char const *argv[]) {
 
 #ifdef __linux__
 
+    Ptr<cv::ml::SVM> trainer = cv::ml::SVM::create();
+ 
+	Ptr<cv::ml::TrainData> tdata = cv::ml::TrainData::create(train_data, cv::ml::ROW_SAMPLE, train_data_lables);
+    cv::ml::ParamGrid c_g(0.1, 500, 1);
+    cv::ml::ParamGrid gamma_g(1e6, 0.8, 5);
+
+    begin = (double)getTickCount();
+    trainer->trainAuto(tdata, 10, c_g, gamma_g);
+    cout<<"train take time: "<<((double)getTickCount() - begin)/getTickFrequency()<<endl;
+	trainer->save("ball_rbf_auto_v4.xml");//保存
 #endif
-
-    // GetXsSampleData( root_path + "Pos/", "*.jpg", POS_LABLE, train_data, train_data_lables );
-    // GetXsSampleData( root_path + "Neg/", "*.jpg", NEG_LABLE, train_data, train_data_lables );
-    // // cout<<train_data.size()<<' '<<train_data.type()<<endl;
-    // // cout<<train_data_lables.size()<<' '<<train_data_lables.type()<<endl;
-    // // cout<<train_data.size()<<endl;
-    // // cout<<train_data_lables.size()<<endl;
-
-    // // 参数设置
-    // CvSVMParams train_params;
-    // train_params.svm_type = CvSVM::C_SVC;
-    // train_params.kernel_type = CvSVM::RBF;
-    // train_params.degree = 0;
-    // train_params.gamma = 1;
-    // train_params.coef0 = 0;
-    // train_params.C = 1;
-    // train_params.nu = 0;
-    // train_params.p = 0;
-    // train_params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100000, 1e-7); // 训练终止条件
-
-    // CvSVM trainer;
-    // // trainer.train(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
-    // // trainer.train()
-    // trainer.train_auto(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
-
-    // cout<<trainer.params.C<<trainer.params.nu<<endl;
-    // cout<<"train done"<<endl;
-    // trainer.save("ball_linear_auto.xml");
-
     return 0;
 }
