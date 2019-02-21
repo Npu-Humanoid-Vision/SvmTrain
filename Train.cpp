@@ -109,7 +109,7 @@ int main(int argc, char const *argv[]) {
     // 参数设置
     CvTermCriteria criteria = cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 50000, FLT_EPSILON);
     //SVM参数：SVM类型为C_SVC；线性核函数；松弛因子C=0.01
-    CvSVMParams train_params(CvSVM::EPS_SVR, CvSVM::RBF, 0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0, criteria);
+    CvSVMParams train_params(CvSVM::NU_SVR, CvSVM::SIGMOID, 0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0, criteria);
 
     CvSVM trainer;
 

@@ -107,23 +107,42 @@ void GetXX(cv::Mat& test_data, CvSVM& tester, int lable, int& true_num, int& fal
     true_num  = 0;
     false_num = 0;
 
+    // load image for show
+    string folder_path = TESTSET_PATH;
+    if (lable == POS_LABLE) {
+        folder_path += "Pos/";
+    }
+    else {
+        folder_path += "Neg/";
+    }
+    std::vector<std::string> image_names;
+    GetImgNames(folder_path, image_names);
+
+
     int test_sample_num = test_data.rows;
     for (auto i = 0; i < test_sample_num; i++) {
         cv::Mat test_vec = test_data.row(i);
+#ifdef REGRESSION
         double scores = tester.predict(test_vec);
         int t_predict_lable;
-        if (scores > 0) {
+        if (scores > 0.5) {
             t_predict_lable = POS_LABLE;
         }
         else {
             t_predict_lable = NEG_LABLE;
         }
-        // int t_predict_lable = (int)tester.predict(test_vec);
+#else
+        int t_predict_lable = (int)tester.predict(test_vec);
+#endif
         if (t_predict_lable == lable) {
             true_num++;
         }
         else {
             false_num++;
+            cout<<"wrong classified: "<<folder_path<<image_names[i]<<endl;
+            cv::Mat t = cv::imread(folder_path+image_names[i]);
+            cv::imshow("wrong classified", t);
+            cv::waitKey(500);
         }
     }
     return ;
