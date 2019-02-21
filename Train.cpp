@@ -1,3 +1,5 @@
+#include "Params.h"
+
 #include <bits/stdc++.h>
 #include <vector>
 #include <iostream>
@@ -5,8 +7,6 @@
 using namespace std;
 using namespace cv;
 
-#define POS_LABLE 1
-#define NEG_LABLE 0
 
 #ifdef __linux__
 #include <sys/types.h>
@@ -72,7 +72,7 @@ void GetXsSampleData(const string folder_path, int lable,
     GetImgNames(folder_path, image_names);
 
     // define hog descriptor 
-    cv::HOGDescriptor hog_des(Size(32, 32), Size(16, 16), Size(2, 2), Size(8, 8), 12);
+    cv::HOGDescriptor hog_des(Size(128, 128), Size(16, 16), Size(8, 8), Size(8, 8), 9);
 
     // read images and compute
     for (auto i = image_names.begin(); i != image_names.end(); i++) {
@@ -96,8 +96,9 @@ int main(int argc, char const *argv[]) {
     // for train time
     double begin;
 
-    string pos_root_path = "../../BackUpSource/Ball/Train/Preproc/Pos/";
-    string neg_root_path = "../../BackUpSource/Ball/Train/Preproc/Neg/";
+    string pos_root_path = string(TRAINSET_PATH) + string("Pos/");
+    string neg_root_path = string(TRAINSET_PATH) + string("Neg/");
+    cout<<pos_root_path<<endl<<neg_root_path<<endl;
     cv::Mat train_data;
     cv::Mat train_data_lables;
     GetXsSampleData(pos_root_path, POS_LABLE, train_data, train_data_lables);
@@ -106,28 +107,21 @@ int main(int argc, char const *argv[]) {
 
 #ifdef __WIN32 // mingw 只配了 opencv2
     // 参数设置
-    CvSVMParams train_params;
-    train_params.svm_type = CvSVM::NU_SVR;
-    train_params.kernel_type = CvSVM::LINEAR;
-    train_params.degree = 0.5;
-    train_params.gamma = 1;
-    train_params.coef0 = 0.5;
-    train_params.C = 1;
-    train_params.nu = 0.5;
-    train_params.p = 0.5;
-    train_params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100000, 1e-7); // 训练终止条件
+    CvTermCriteria criteria = cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 50000, FLT_EPSILON);
+    //SVM参数：SVM类型为C_SVC；线性核函数；松弛因子C=0.01
+    CvSVMParams train_params(CvSVM::EPS_SVR, CvSVM::RBF, 0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0, criteria);
 
     CvSVM trainer;
-    // trainer.train(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
-    // trainer.train()
+
     begin = (double)getTickCount();
+    // trainer.train(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
     trainer.train_auto(train_data, train_data_lables, cv::Mat(), cv::Mat(), train_params);
 
-    // cout<<trainer.params.C<<trainer.params.nu<<endl;
-    
-    cout<<"train done"<<endl;
+
     cout<<"train take time: "<<((double)getTickCount() - begin)/getTickFrequency()<<endl;
-    trainer.save("nu_svr_linear.xml");
+    cout<<"C: "<<trainer.get_params().C<<endl;
+    trainer.save(MODEL_NAME);
+    cout<<"Save model to: "<<MODEL_NAME<<endl;
 
 #endif
 

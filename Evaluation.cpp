@@ -1,3 +1,5 @@
+#include "Params.h"
+
 #include <bits/stdc++.h>
 #include <vector>
 #include <iostream>
@@ -24,7 +26,6 @@ using namespace cv;
 #include <windows.h>
 #endif
 
-#define MODEL_NAME "nu_svc_rbf.xml"
 
 // 获得某文件夹下所有图片的名字
 void GetImgNames(string root_path, std::vector<std::string>& names) {
@@ -74,7 +75,7 @@ void GetXsSampleData(const string folder_path, int lable,
     GetImgNames(folder_path, image_names);
 
     // define hog descriptor 
-    cv::HOGDescriptor hog_des(Size(32, 32), Size(16, 16), Size(2, 2), Size(8, 8), 12);
+    cv::HOGDescriptor hog_des(Size(128, 128), Size(16, 16), Size(8, 8), Size(8, 8), 9);
 
     // read images and compute
     for (auto i = image_names.begin(); i != image_names.end(); i++) {
@@ -109,7 +110,15 @@ void GetXX(cv::Mat& test_data, CvSVM& tester, int lable, int& true_num, int& fal
     int test_sample_num = test_data.rows;
     for (auto i = 0; i < test_sample_num; i++) {
         cv::Mat test_vec = test_data.row(i);
-        int t_predict_lable = (int)tester.predict(test_vec);
+        double scores = tester.predict(test_vec);
+        int t_predict_lable;
+        if (scores > 0) {
+            t_predict_lable = POS_LABLE;
+        }
+        else {
+            t_predict_lable = NEG_LABLE;
+        }
+        // int t_predict_lable = (int)tester.predict(test_vec);
         if (t_predict_lable == lable) {
             true_num++;
         }
@@ -135,8 +144,7 @@ void GetScores(string test_data_path, EvaluationValues& scores) {
     cv::Mat test_data_lables;
     GetXsSampleData(test_data_path+"/Pos/", POS_LABLE, test_data_pos, test_data_lables);
     GetXsSampleData(test_data_path+"/Neg/", NEG_LABLE, test_data_neg, test_data_lables);
-    cout<<"test data size: "<<test_data_pos.size()+test_data_neg.size()<<endl;
-    cout<<"test data lable size: "<<test_data_lables.size()<<endl;
+    cout<<"test data size: "<<test_data_lables.size()<<endl;
 
     // get classifier 
     CvSVM tester;
@@ -145,6 +153,8 @@ void GetScores(string test_data_path, EvaluationValues& scores) {
     // get XX
     GetXX(test_data_pos, tester, POS_LABLE, scores.TP, scores.FN);
     GetXX(test_data_neg, tester, NEG_LABLE, scores.TN, scores.FP);
+    cout<<"TP: "<<scores.TP<<"\t FP: "<<scores.FP<<endl
+        <<"FN: "<<scores.FN<<"\t TN: "<<scores.TN<<endl;
 
     scores.precision_rate = 1.0*scores.TP/(scores.TP+scores.FP);
     scores.recall_rate    = 1.0*scores.TP/(scores.TP+scores.FN); 
@@ -154,7 +164,7 @@ void GetScores(string test_data_path, EvaluationValues& scores) {
 }
 
 int main () {
-    string test_data_path = "../../BackUpSource/Ball/Train/";
+    string test_data_path = TESTSET_PATH;
     EvaluationValues scores;
     GetScores(test_data_path, scores);
     cout<<"precision rate: \t"<<scores.precision_rate<<endl
