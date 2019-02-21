@@ -24,7 +24,7 @@ using namespace cv;
 #include <windows.h>
 #endif
 
-#define MODEL_NAME "ball_nu_svc_linear_v1.xml"
+#define MODEL_NAME "nu_svc_rbf.xml"
 
 // 获得某文件夹下所有图片的名字
 void GetImgNames(string root_path, std::vector<std::string>& names) {
