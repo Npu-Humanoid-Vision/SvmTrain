@@ -2,6 +2,7 @@
 #include <vector>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <opencv2/nonfree/nonfree.hpp>
 using namespace std;
 using namespace cv;
 
@@ -30,6 +31,13 @@ using namespace cv;
 #define TESTSET_PATH "../../BackUpSource/BigBall/Test/"
 #define TRAINSET_PATH "../../BackUpSource/BigBall/Train/"
 
+
+enum { H,S,V,L,A,B };
+
+void GetImgNames(string root_path, std::vector<std::string>& names);
+cv::Mat GetUsedChannel(cv::Mat& src_img, int flag);
+void GetXsSampleData(const string folder_path, int lable, 
+            cv::Mat& train_data, cv::Mat& train_data_lables);
 
 // 获得某文件夹下所有图片的名字
 void GetImgNames(string root_path, std::vector<std::string>& names) {
@@ -71,6 +79,27 @@ void GetImgNames(string root_path, std::vector<std::string>& names) {
 }
 
 
+cv::Mat GetUsedChannel(cv::Mat& src_img, int flag) {
+    cv::Mat t;
+    cv::Mat t_cs[3];
+    switch (flag) {
+    case 0:
+    case 1:
+    case 2:
+        cv::cvtColor(src_img, t, CV_BGR2HSV_FULL);
+        cv::split(t, t_cs);
+        return t_cs[flag];
+    case 3:
+    case 4:
+    case 5:
+        cv::cvtColor(src_img, t, CV_BGR2Lab);
+        cv::split(t, t_cs);
+        return t_cs[flag - 3];
+    }
+}
+
+
+
 void GetXsSampleData(const string folder_path, int lable, 
             cv::Mat& train_data, cv::Mat& train_data_lables) {
 
@@ -86,7 +115,21 @@ void GetXsSampleData(const string folder_path, int lable,
         string t_path = folder_path + (*i);
         cv::Mat t_image = cv::imread(t_path);
         std::vector<float> t_descrip_vec;
+
+        // hog related
         hog_des.compute(t_image, t_descrip_vec);
+
+        // moment related
+        for (int j=0; j<6; j++) {
+            cv::Mat t_image_l = GetUsedChannel(t_image, j);
+            cv::Moments moment = cv::moments(t_image_l, false);
+            double hu[7];
+            cv::HuMoments(moment, hu);
+            for (int k=0; k<7; k++) {
+                t_descrip_vec.push_back(hu[k]);
+            }
+        }
+        Ptr<FaceRecognizer> model = createLBPHFaceRecognizer();
 
 
         // copy t_descrip_vec to train_data
